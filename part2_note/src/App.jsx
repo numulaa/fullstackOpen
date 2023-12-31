@@ -3,6 +3,7 @@ import { useState } from "react";
 import Note from "./components/Note";
 import axios from "axios";
 import { useEffect } from "react";
+import noteService from "./services/notes";
 
 const App = () => {
   const [notes, setNotes] = useState([]);
@@ -11,9 +12,8 @@ const App = () => {
 
   useEffect(() => {
     console.log("effect");
-    axios.get("http://localhost:3001/notes").then((res) => {
-      console.log("promie fulfilled");
-      setNotes(res.data);
+    noteService.getAll().then((initialNotes) => {
+      setNotes(initialNotes);
     });
   }, []);
   console.log("render", notes.length, "notes");
@@ -24,9 +24,8 @@ const App = () => {
       content: newNote,
       important: Math.random() < 0.5,
     };
-    axios.post("http://localhost:3001/notes", noteObject).then((res) => {
-      console.log(res);
-      setNotes(notes.concat(res.data));
+    noteService.create(noteObject).then((returnedNote) => {
+      setNotes(notes.concat(returnedNote));
       setNewNote("");
     });
   };
@@ -40,15 +39,21 @@ const App = () => {
     : notes.filter((note) => note.important === true);
 
   const toggleImportance = (id) => {
-    const url = `http://localhost:3001/notes/${id}`;
     //find the note with the selected id
     const note = notes.find((n) => n.id === id);
     //change the selected note with the new importance value
     const changedNote = { ...note, important: !note.important };
-    axios.put(url, changedNote).then((res) => {
-      //create a new array with the changedNote data
-      setNotes(notes.map((n) => (n.id !== id ? n : res.data)));
-    });
+    noteService
+      .update(id, changedNote)
+      .then((returnedNote) => {
+        //create a new array with the changedNote data
+        setNotes(notes.map((n) => (n.id !== id ? n : returnedNote)));
+      })
+      .catch((err) => {
+        alert(`the note '${note.content}' was already deleted from server`);
+        console.log(err);
+        setNotes(notes.filter((n) => n.id !== id));
+      });
   };
   return (
     <div>
