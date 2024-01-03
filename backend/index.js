@@ -46,12 +46,26 @@ app.get("/api/notes/:id", (req, res) => {
   }
 });
 
+const generateId = () => {
+  const maxId = notes.length > 0 ? Math.max(...notes.map((n) => n.id)) : 0;
+  return maxId + 1;
+};
 app.post("/api/notes", (req, res) => {
   //find the max id to help in generating the id for the new added content
   //map() in this creates a new array consisting all the ids
-  const maxId = notes.length > 0 ? Math.max(...notes.map((n) => n.id)) : 0;
-  const note = req.body;
-  note.id = maxId + 1;
+  const body = req.body;
+  if (!body.content) {
+    return res.status(400).json({
+      error: "content missing",
+    });
+  }
+
+  const note = {
+    content: body.content,
+    important: Boolean(body.important) || false,
+    id: generateId(),
+  };
+  notes = notes.concat(note);
   res.json(note);
 });
 
